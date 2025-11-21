@@ -1,0 +1,9 @@
+version: "3.9"
+
+services:
+  scraper:
+    build: ./scraper_service
+    container_name: fosil_scraper
+    volumes:
+      - ./data:/data
+    restart: "no"
