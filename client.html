@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fosil Chat</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 2rem auto;
+    }
+    #chat {
+      border: 1px solid #ccc;
+      padding: 1rem;
+      height: 400px;
+      overflow-y: auto;
+      background: #f9f9f9;
+      margin-bottom: 1rem;
+    }
+    .message {
+      margin-bottom: 0.5rem;
+    }
+    .user { font-weight: bold; }
+    .bot { color: green; }
+    .error { color: red; }
+    #inputContainer {
+      display: flex;
+    }
+    #msg {
+      flex: 1;
+      padding: 0.5rem;
+      font-size: 1rem;
+    }
+    #send {
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+    }
+    .result {
+      font-size: 0.9rem;
+      margin-left: 1rem;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Chat</h1>
+<div id="chat"></div>
+
+<div id="inputContainer">
+  <input type="text" id="msg" placeholder="Type your question..." />
+  <button id="send">Send</button>
+</div>
+
+<script>
+  const chat = document.getElementById('chat');
+  const msgInput = document.getElementById('msg');
+  const sendBtn = document.getElementById('send');
+
+  const ws = new WebSocket("ws://localhost:8000/ws");
+
+  ws.onopen = () => appendMessage("System", "Connected to WebSocket server.", "bot");
+  ws.onclose = () => appendMessage("System", "Disconnected from server.", "bot");
+
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+
+    if (data.error) {
+      appendMessage("Error", data.error, "error");
+      return;
+    }
+
+    if (data.answer) {
+      appendMessage("GPT Answer", data.answer, "bot");
+    }
+  };
+
+  sendBtn.onclick = sendMessage;
+  msgInput.addEventListener("keyup", (e) => { if(e.key==="Enter") sendMessage(); });
+
+  function sendMessage() {
+    const text = msgInput.value.trim();
+    if (!text) return;
+
+    appendMessage("You", text, "user");
+
+    ws.send(JSON.stringify({
+      query: text,
+      top_k: 5,
+      gpt_answer: true
+    }));
+
+    msgInput.value = "";
+  }
+
+  function appendMessage(sender, text, cls) {
+    const div = document.createElement("div");
+    div.classList.add("message", cls);
+    div.innerHTML = `<strong>${sender}:</strong> ${text}`;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+  }
+</script>
+
+</body>
+</html>

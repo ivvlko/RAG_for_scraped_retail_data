@@ -3,14 +3,14 @@ services:
     image: ankane/pgvector:latest
     container_name: pgvector
     environment:
-      POSTGRES_PASSWORD: ${DB_PASS}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
     ports:
       - "5432:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
-
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 3s
@@ -19,14 +19,14 @@ services:
 
   scraper:
     build: ./scraper_service
-    container_name: fosil_scraper
+    container_name: scraper
     volumes:
       - ./data:/data
     restart: "no"
 
   data_processor:
     build: ./data_processing_service
-    container_name: fosil_processor
+    container_name: processor
     volumes:
       - ./data:/data
     depends_on:
@@ -36,7 +36,7 @@ services:
 
   data_ingestor:
     build: ./data_ingestion_service
-    container_name: fosil_ingestor
+    container_name: ingestor
     environment:
       OPEN_AI_API_KEY: ${OPEN_AI_API_KEY}
       EMBEDDING_MODEL: text-embedding-3-small
@@ -63,6 +63,22 @@ services:
       - pgadmin_data:/var/lib/pgadmin
     depends_on:
       - db
+
+  fastapi_service:
+    build: ./websocket_service
+    container_name: fastapi
+    environment:
+      OPEN_AI_API_KEY: ${OPEN_AI_API_KEY}
+      PG_URI: postgresql://postgres:postgres@db:5432/postgres
+      EMBEDDING_MODEL: text-embedding-3-small
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      data_ingestor:
+        condition: service_completed_successfully
+
 volumes:
   pg_data:
   pgadmin_data:
