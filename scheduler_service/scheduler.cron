@@ -1,0 +1,1 @@
+15 7 * * * python /scraper_service/run.py && python /data_processing_service/run.py && python /data_ingestion_service/run.py

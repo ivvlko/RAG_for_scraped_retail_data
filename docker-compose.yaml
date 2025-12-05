@@ -95,6 +95,19 @@ services:
         condition: service_completed_successfully
     restart: "no"
 
+  scheduler:
+    build:
+      context: .
+      dockerfile: scheduler_service/Dockerfile
+    container_name: scheduler
+    restart: unless-stopped
+    depends_on:
+      - db
+      - scraper
+      - data_processor
+      - data_ingestor
+
+
 volumes:
   pg_data:
   pgadmin_data:
